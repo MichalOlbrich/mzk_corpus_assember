@@ -22,7 +22,7 @@ def load_decade(path):
 
     # Display first file
     print(f"--- Showing first file: {files[0]} ---\n")
-    clean_document(documents[2])
+    clean_document(documents[12])
 
     return documents
 
@@ -155,21 +155,84 @@ def is_standard_word(word):
     pattern = f"^[{CZECH_CHARS}]+$"
     return bool(re.match(pattern, stripped))
 
+
+REGULAR_CHARS = CZECH_CHARS + r"\s\.\,\-\–\—\!\\\?\;\:\(\)\/"  # allow long dash etc.
+
+
+def is_page_useless(page, lines):
+    """Return True for pages that are TOC-like or mostly OCR artifacts."""
+
+    # 1) Extremely short page → useless
+    if len(page.strip()) < 50:
+        return True
+
+    # 2) Count Czech letters
+    czech_letters = re.findall(f"[{CZECH_CHARS}]", page)
+    czech_ratio = len(czech_letters) / max(len(page), 1)
+
+    # 2a) If Czech ratio < 2%, it's mostly garbage/noise
+    if czech_ratio < 0.02:
+        print("czech_ratio < 0.02")
+        return True
+
+    # 3) TOC detection: lots of dot leaders ("..... 23")
+    dot_leader_lines = sum(
+        1 for l in lines if re.search(r"\.{3,}.*$", l.strip())
+    )
+    if dot_leader_lines >= 4:  # having ≥4 strongly indicates a TOC page
+        print("dot_leader_lines")
+        return True
+
+    # 4) Count lines that contain Czech text
+    czech_lines = sum(1 for l in lines if re.search(f"[{CZECH_CHARS}]", l))
+
+    # If page has >10 lines but only 1–2 lines with real text → useless
+    if len(lines) > 10 and czech_lines <= 2:
+        print("has >10 lines but only 1–2 lines")
+        return True
+
+    # 5) Percentage of “regular” characters (letters or at least punctuation)
+    allowed_chars = re.findall(f"[{REGULAR_CHARS}]", page)
+    regular_ratio = len(allowed_chars) / len(page)
+
+    # If < 50% of characters are normal (rest = symbols ⧘⧛◊□ etc.)
+    if regular_ratio < 0.5:
+        print("< 50% of characters are normal")
+        return True
+
+    # 6) Uppercase ratio
+    letters = re.findall(r"[A-Za-zÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž]", page)
+    uppercase_letters = [ch for ch in letters if ch.isupper()]
+
+    if letters:  # avoid division by zero
+        uppercase_ratio = len(uppercase_letters) / len(letters)
+        if uppercase_ratio > 0.5:
+            print("> 50% Uppercase ratio")
+            return True
+
+    return False
+
+
 def clean_document(document):
     cnt_non_standard = 0
-    pattern = r"-{13}<Page:\s*\d+\s*>-{11,}"
-    page_number_pattern = r"^[\-\–—\s]*\d+[\-\–—\s]*$"
-    roman_pattern = r"^[\-\–—\s]*[IVXLCDMivxlcdm]+\.[\-\–—\s]*$"
-
+    cnt_non_standard_pages = 0
+    pattern_page_separator = r"-{13}<Page:\s*\d+\s*>-{11,}"
     # Split the document at these tags
-    pages = re.split(pattern, document)
+    pages = re.split(pattern_page_separator, document)
     # The text before the first page marker is usually empty → remove it
     pages = [p.strip() for p in pages if p.strip()]
 
     for page in pages:
+
         lines = page.split("\n")
+        print("#################################################")
+        if is_page_useless(page, lines):
+
+            print("----PAGE IS USELESS------#################################################")
+            cnt_non_standard_pages+=1
+            # continue
         cleaned_lines = []
-        print("++++++++++++++++++++++++++")
+        print("#################################################")
         for line in lines:
             # Remove BOM if present
             line = line.lstrip("\ufeff").strip()
@@ -192,7 +255,7 @@ def clean_document(document):
             for word in words:
                 if not is_standard_word(word):
                     cnt_non_standard+=1
-                    print("NONSTANDARD:\t",word)
+                    # print("NONSTANDARD:\t",word)
 
             print(line)
 
@@ -202,3 +265,4 @@ def clean_document(document):
         # print(cleaned_page)
 
     print("cnt_non_standard",cnt_non_standard)
+    print("cnt_non_standard",cnt_non_standard_pages)
