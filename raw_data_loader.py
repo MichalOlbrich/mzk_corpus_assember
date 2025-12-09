@@ -16,15 +16,36 @@ def load_decade(path):
 
     # Load all files into a list
     documents = []
+    clean_documents = []
+    weird_documents = []
     for fname in files:
         with open(os.path.join(path, fname), "r", encoding="utf-8") as f:
             documents.append(f.read())
 
-    # Display first file
-    print(f"--- Showing first file: {files[0]} ---\n")
-    clean_document(documents[12])
+    cnt_not_czech = 0
+    cnt_almost_not_czech = 0
+    not_used_docs = 0
+    for i,document in enumerate(documents):
+        print(f"document {i} out of {len(documents)}")
+        if not is_czech_by_chars(document):
+            print("NOT CZECH:", cnt_not_czech)
+            cnt_not_czech+=1
+            continue
+        clean_doc = clean_document(document)
+        if not is_czech_by_chars(clean_doc, given_ratio=0.01):
+            if len(clean_doc) > 1000:
+                print("ALMOST NOT CZECH:",cnt_almost_not_czech)
+                cnt_almost_not_czech+=1
+                # weird_documents.append(clean_doc)
+            else:
+                not_used_docs += 1
+                print("TOO SHORT",not_used_docs)
+            continue
+        clean_documents.append(clean_doc)
 
-    return documents
+    clean_documents = "\n".join(clean_documents)
+
+    return clean_documents
 
 
 PAGE_NUMBER_PATTERN = r"^[\-\–—\s]*\d+[\-\–—\s]*$"
@@ -170,9 +191,9 @@ def is_page_useless(page, lines):
     czech_letters = re.findall(f"[{CZECH_CHARS}]", page)
     czech_ratio = len(czech_letters) / max(len(page), 1)
 
-    # 2a) If Czech ratio < 2%, it's mostly garbage/noise
-    if czech_ratio < 0.02:
-        print("czech_ratio < 0.02")
+    # 2a) If Czech ratio < 50%, it's mostly garbage/noise
+    if czech_ratio < 0.5:
+        # print("czech_ratio < 0.5")
         return True
 
     # 3) TOC detection: lots of dot leaders ("..... 23")
@@ -180,7 +201,7 @@ def is_page_useless(page, lines):
         1 for l in lines if re.search(r"\.{3,}.*$", l.strip())
     )
     if dot_leader_lines >= 4:  # having ≥4 strongly indicates a TOC page
-        print("dot_leader_lines")
+        # print("dot_leader_lines")
         return True
 
     # 4) Count lines that contain Czech text
@@ -188,16 +209,18 @@ def is_page_useless(page, lines):
 
     # If page has >10 lines but only 1–2 lines with real text → useless
     if len(lines) > 10 and czech_lines <= 2:
-        print("has >10 lines but only 1–2 lines")
+        # print("has >10 lines but only 1–2 lines")
         return True
 
     # 5) Percentage of “regular” characters (letters or at least punctuation)
     allowed_chars = re.findall(f"[{REGULAR_CHARS}]", page)
     regular_ratio = len(allowed_chars) / len(page)
 
-    # If < 50% of characters are normal (rest = symbols ⧘⧛◊□ etc.)
-    if regular_ratio < 0.5:
-        print("< 50% of characters are normal")
+    # If < 95% of characters are normal (rest = symbols ⧘⧛◊□ etc.)
+    # for most pages its close to 99,99% so everything below 98 % is sus
+    # print("regular_ratio", regular_ratio)
+    if regular_ratio < 0.96:
+        # print("< 96% of characters are normal")
         return True
 
     # 6) Uppercase ratio
@@ -207,11 +230,22 @@ def is_page_useless(page, lines):
     if letters:  # avoid division by zero
         uppercase_ratio = len(uppercase_letters) / len(letters)
         if uppercase_ratio > 0.5:
-            print("> 50% Uppercase ratio")
+            # print("> 50% Uppercase ratio")
             return True
 
     return False
 
+
+def is_czech_by_chars(text, given_ratio=0.003):
+    czech_diacritics = "áéíóúýčďěňřšťůžÁÉÍÓÚÝČĎĚŇŘŠŤŮŽ"
+    count = sum(1 for ch in text if ch in czech_diacritics)
+    ratio = count / max(1, len(text))
+
+    # print("RATIO:",ratio,"\tCOUNT:",count)
+
+    if ratio > given_ratio:          # > 1% - 10% normal Czech, so 1% is still very generous
+        return True
+    return False
 
 def clean_document(document):
     cnt_non_standard = 0
@@ -221,18 +255,18 @@ def clean_document(document):
     pages = re.split(pattern_page_separator, document)
     # The text before the first page marker is usually empty → remove it
     pages = [p.strip() for p in pages if p.strip()]
-
+    clean_pages = []
     for page in pages:
 
         lines = page.split("\n")
-        print("#################################################")
+        # print("#################################################")
         if is_page_useless(page, lines):
 
-            print("----PAGE IS USELESS------#################################################")
+            # print("----PAGE IS USELESS------#################################################")
             cnt_non_standard_pages+=1
-            # continue
+            continue
         cleaned_lines = []
-        print("#################################################")
+        # print("#################################################")
         for line in lines:
             # Remove BOM if present
             line = line.lstrip("\ufeff").strip()
@@ -249,20 +283,27 @@ def clean_document(document):
         cleaned_page = fix_expanded_hyphenation(cleaned_page)
         cleaned_page = fix_homoglyphs(cleaned_page)
 
-        lines = cleaned_page.split("\n")
-        for line in lines:
-            words = line.split()
-            for word in words:
-                if not is_standard_word(word):
-                    cnt_non_standard+=1
-                    # print("NONSTANDARD:\t",word)
-
-            print(line)
 
 
-        # Now print or store the cleaned page text
-        # cleaned_page = "\n".join(cleaned_lines)
-        # print(cleaned_page)
+        clean_pages.append(cleaned_page)
+    document = "\n".join(clean_pages)
+    return document
 
-    print("cnt_non_standard",cnt_non_standard)
-    print("cnt_non_standard",cnt_non_standard_pages)
+    # ## DEBUG
+    #     lines = cleaned_page.split("\n")
+    #     for line in lines:
+    #         words = line.split()
+    #         for word in words:
+    #             if not is_standard_word(word):
+    #                 cnt_non_standard+=1
+    #                 # print("NONSTANDARD:\t",word)
+    #
+    #         #print(line)
+    #
+    #
+    #     # Now print or store the cleaned page text
+    #     #cleaned_page = "\n".join(cleaned_lines)
+    #     print(cleaned_page)
+    #
+    # print("cnt_non_standard",cnt_non_standard)
+    # print("cnt_non_standard",cnt_non_standard_pages)
