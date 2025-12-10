@@ -1,28 +1,8 @@
-import raw_data_loader
-import data_saver
-from corpus_tools import decades_stats
-from visualizers import basic_ploter, word_evolution_plotter
+
+from corpus_creation import corpus_assembler
 
 
-def test_corpora():
-    start_year = 1850
-    decade_directory = "../mzkscraper/results/decades/" + str(start_year) + "decade"
-    decade_corpus = raw_data_loader.load_decade(decade_directory)
-    data_saver.create_decade_corpus(decade_corpus, f'{start_year}_old')
-
-def assemble_corpora():
-    # start_year = 1880
-    # decade_directory = "../mzkscraper/results/decades/" + str(start_year) + "decade"
-    # decade_corpus = raw_data_loader.load_decade(decade_directory)
-    # data_saver.create_decade_corpus(decade_corpus, start_year)
-    start_year = 1870
-    for decade in range(start_year,1950,10):
-        decade_directory = "../mzkscraper/results/decades/" + str(decade) + "decade"
-        decade_corpus = raw_data_loader.load_decade(decade_directory)
-        data_saver.create_decade_corpus(decade_corpus, decade)
-
-
-# test_corpora()
+corpus_assembler.test_corpora()
 
 # assemble_corpora()
 
@@ -47,5 +27,5 @@ def assemble_corpora():
 # word_to_plot = [ "lénunk", "žold"]
 # # word_to_plot = [ "lénunk"]
 # # word_to_plot = [ "propást"]
-word_to_plot = ["nejmnožší"]
-word_evolution_plotter.plot_word_frequencies(word_to_plot)
+# word_to_plot = ["nejmnožší"]
+# word_evolution_plotter.plot_word_frequencies(word_to_plot)
