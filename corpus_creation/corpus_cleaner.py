@@ -1,35 +1,47 @@
 import re
 from corpus_creation import error_corrector, basic_page_cleaner, basic_line_cleaner, basic_language_detection, error_corrector
+from corpus_creation.debug_module import debug_message_page, debug_message_document
+
 
 def cleanup_and_create_decade_corpus(documents):
     clean_documents = []
     cnt_not_czech = 0
+    cnt_fracture = 0
     cnt_almost_not_czech = 0
     not_used_docs = 0
     for i,document in enumerate(documents):
-        print(f"document {i} out of {len(documents)}")
-        if not basic_language_detection.is_czech_by_chars(document):
-            print("NOT CZECH:", cnt_not_czech)
-            cnt_not_czech+=1
+        if i != 66:
             continue
+        # if i < 65:
+        #     continue
+        debug_message_document(f"document {i} out of {len(documents)}")
+        if not basic_language_detection.is_czech_by_chars(document):
+            debug_message_document("NOT CZECH:", cnt_not_czech)
+            cnt_not_czech+=1
+            # continue
+        elif basic_language_detection.is_fracture(document,given_ratio=0.015):
+            debug_message_document("FRACTURE:", cnt_fracture)
+            cnt_fracture += 1
+            # continue
         clean_doc = clean_document(document)
         if not basic_language_detection.is_czech_by_chars(clean_doc, given_ratio=0.01):
             if len(clean_doc) > 1000:
-                print("ALMOST NOT CZECH:",cnt_almost_not_czech)
+                debug_message_document("ALMOST NOT CZECH:", cnt_almost_not_czech)
                 cnt_almost_not_czech+=1
                 # weird_documents.append(clean_doc)
             else:
                 not_used_docs += 1
-                print("TOO SHORT",not_used_docs)
+                debug_message_document("TOO SHORT", not_used_docs)
             continue
-
-        # clean_doc = error_corrector.tokenize_and_correct_errors(clean_doc)
+        clean_doc = error_corrector.tokenize_and_correct_errors(clean_doc)
+        print(clean_doc)
         clean_documents.append(clean_doc)
-        break
+        clean_documents.append(clean_doc)
+
 
     clean_documents = "\n".join(clean_documents)
 
-    return clean_documents
+    return clean_documents, [cnt_not_czech, cnt_fracture, cnt_almost_not_czech, not_used_docs]
 
 
 def clean_document(document):
@@ -43,13 +55,15 @@ def clean_document(document):
     clean_pages = []
     for i, page in enumerate(pages):
         lines = page.split("\n")
-        print(f"{i} #################################################")
+        debug_message_page(f"{i} #################################################")
+        if i >= len(pages)-2 or i <= 1:
+            continue
         if basic_page_cleaner.is_page_useless(page, lines):
-            print("----PAGE IS USELESS------#################################################")
+            debug_message_page("----PAGE IS USELESS------#################################################")
             cnt_non_standard_pages+=1
             continue
         cleaned_lines = []
-        print("#################################################")
+        debug_message_page("#################################################")
         for line in lines:
             # Remove BOM if present
             line = line.lstrip("\ufeff").strip()
@@ -58,6 +72,10 @@ def clean_document(document):
             # Skip page numbering lines
             if basic_line_cleaner.is_page_number_line(line):
                 continue
+            if basic_line_cleaner.is_non_word_line(line):
+                continue
+            if basic_line_cleaner.is_tab_line(line):
+                continue
             cleaned_lines.append(line)
 
         # FIX HYPHENATION HERE
@@ -65,7 +83,7 @@ def clean_document(document):
         cleaned_page = basic_page_cleaner.fix_expanded_hyphenation(cleaned_page)
         cleaned_page = error_corrector.fix_homoglyphs(cleaned_page)
 
-        print(cleaned_page)
+        debug_message_page(cleaned_page)
 
         clean_pages.append(cleaned_page)
     document = "\n".join(clean_pages)
@@ -78,14 +96,14 @@ def clean_document(document):
     #         for word in words:
     #             if not is_standard_word(word):
     #                 cnt_non_standard+=1
-    #                 # print("NONSTANDARD:\t",word)
+    #                 # debug_message("NONSTANDARD:\t",word)
     #
-    #         #print(line)
+    #         #debug_message(line)
     #
     #
-    #     # Now print or store the cleaned page text
+    #     # Now debug_message or store the cleaned page text
     #     #cleaned_page = "\n".join(cleaned_lines)
-    #     print(cleaned_page)
+    #     debug_message(cleaned_page)
     #
-    # print("cnt_non_standard",cnt_non_standard)
-    # print("cnt_non_standard",cnt_non_standard_pages)
+    # debug_message("cnt_non_standard",cnt_non_standard)
+    # debug_message("cnt_non_standard",cnt_non_standard_pages)

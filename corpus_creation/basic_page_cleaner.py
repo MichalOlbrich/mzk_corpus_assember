@@ -1,5 +1,7 @@
 import re
 
+from corpus_creation.debug_module import debug_message_page
+
 # Czech letters + digits
 CZECH_CHARS = r"a-zA-ZáÁčČďĎéÉěĚíÍňŇóÓřŘšŠťŤúÚůŮýÝžŽ0-9„“"
 
@@ -15,7 +17,7 @@ def fix_expanded_hyphenation(text):
 def is_page_useless(page, lines):
     """Return True for pages that are TOC-like or mostly OCR artifacts."""
 
-    print("PAGEE CHAR LEN:", len(page.strip()))
+    debug_message_page("PAGEE CHAR LEN:", len(page.strip()))
     # 1) Extremely short page → useless
     if len(page.strip()) < 150:
         return True

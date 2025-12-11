@@ -1,6 +1,6 @@
 
 from corpus_creation import corpus_assembler
-
+from visualizers import word_evolution_plotter
 
 corpus_assembler.test_corpora()
 
@@ -16,11 +16,13 @@ corpus_assembler.test_corpora()
 # # word_to_plot = ["lučba", "chemie"]
 # word_to_plot = ["urlaub", "dovolená"]
 # word_to_plot = ["válka", "vojna"]
+# word_to_plot = ["jenerál", "generál"]
+
+
 # #word_to_plot = ["rakousko", "československo", "německo"]
 # #word_to_plot = ["císař", "prezident", "president", "král"]
 #
 #
-# # word_to_plot = ["kráľu", "králi"]
 # # word_to_plot = ["inhedž", "hned", "ihned", "inhed"]
 # # word_to_plot = [ "hned", "ihned", "inhed"]
 # #word_to_plot = [ "sě", "se"]
@@ -28,4 +30,5 @@ corpus_assembler.test_corpora()
 # # word_to_plot = [ "lénunk"]
 # # word_to_plot = [ "propást"]
 # word_to_plot = ["nejmnožší"]
+
 # word_evolution_plotter.plot_word_frequencies(word_to_plot)
