@@ -27,6 +27,7 @@ def basic_tokenize(text: str) -> str:
 def replace_wrong_ocr_letters(text: str) -> str:
     text = re.sub(r" y ", " v ", text)
     text = re.sub(r" Y ", " V ", text)
+    text = re.sub(r"ô", "ů", text)
     text = re.sub(r"\nY ", "\nV ", text)
 
 

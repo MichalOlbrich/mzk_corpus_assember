@@ -3,26 +3,27 @@ from corpus_creation import error_corrector, basic_page_cleaner, basic_line_clea
 from corpus_creation.debug_module import debug_message_page, debug_message_document
 
 
-def cleanup_and_create_decade_corpus(documents):
+def cleanup_and_create_decade_corpus(documents, file_names):
     clean_documents = []
+    clean_f_names= []
     cnt_not_czech = 0
     cnt_fracture = 0
     cnt_almost_not_czech = 0
     not_used_docs = 0
-    for i,document in enumerate(documents):
-        if i != 66:
-            continue
+    for i, (document, f_name) in enumerate( zip(documents,file_names)):
+        # if i != 66:
+        #     continue
         # if i < 65:
         #     continue
         debug_message_document(f"document {i} out of {len(documents)}")
         if not basic_language_detection.is_czech_by_chars(document):
             debug_message_document("NOT CZECH:", cnt_not_czech)
             cnt_not_czech+=1
-            # continue
+            continue
         elif basic_language_detection.is_fracture(document,given_ratio=0.015):
             debug_message_document("FRACTURE:", cnt_fracture)
             cnt_fracture += 1
-            # continue
+            continue
         clean_doc = clean_document(document)
         if not basic_language_detection.is_czech_by_chars(clean_doc, given_ratio=0.01):
             if len(clean_doc) > 1000:
@@ -34,14 +35,12 @@ def cleanup_and_create_decade_corpus(documents):
                 debug_message_document("TOO SHORT", not_used_docs)
             continue
         clean_doc = error_corrector.tokenize_and_correct_errors(clean_doc)
-        print(clean_doc)
+        # print(clean_doc)
+
         clean_documents.append(clean_doc)
-        clean_documents.append(clean_doc)
+        clean_f_names.append(f_name)
 
-
-    clean_documents = "\n".join(clean_documents)
-
-    return clean_documents, [cnt_not_czech, cnt_fracture, cnt_almost_not_czech, not_used_docs]
+    return clean_documents, clean_f_names , [cnt_not_czech, cnt_fracture, cnt_almost_not_czech, not_used_docs]
 
 
 def clean_document(document):

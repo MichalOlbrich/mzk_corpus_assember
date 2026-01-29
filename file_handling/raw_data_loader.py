@@ -19,4 +19,4 @@ def load_decade(path):
         with open(os.path.join(path, fname), "r", encoding="utf-8") as f:
             documents.append(f.read())
 
-    return documents
+    return documents, files

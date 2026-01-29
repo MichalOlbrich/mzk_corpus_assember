@@ -51,6 +51,145 @@ def plot_decade_stats(year_begin=1850, year_end=1940, log_scale=True,stats_file 
     print(f"Bar plot saved to {outpath}")
 
 
+def plot_decade_stats_comparison(
+    year_begin=1850,
+    year_end=1940,
+    log_scale=True,
+    stats_file="./data_outputs/decades_stats_cz.tsv",
+    unfiltered_stats_file="./data_outputs/decades_stats_unfiltered.tsv",
+):
+    # Load TSVs
+    df_filt = pd.read_csv(stats_file, sep="\t")
+    df_unfilt = pd.read_csv(unfiltered_stats_file, sep="\t")
+
+    for df in (df_filt, df_unfilt):
+        df["decade"] = df["decade"].astype(int)
+        df = df[(df["decade"] >= year_begin) & (df["decade"] <= year_end)]
+
+    df_filt = df_filt.sort_values("decade")
+    df_unfilt = df_unfilt.sort_values("decade")
+
+    if df_filt.empty or df_unfilt.empty:
+        print(f"No data available between {year_begin} and {year_end}")
+        return
+
+    decades = df_filt["decade"].astype(str)
+    x = np.arange(len(decades))
+
+    group_width = 0.35      # filtered vs unfiltered
+    inner_width = 0.6       # total vs unique inside group
+
+    plt.figure(figsize=(14, 6))
+
+    # ---- Filtered ----
+    plt.bar(
+        x - group_width / 2,
+        df_filt["word_cnt"],
+        group_width,
+        label="Filtered – Total",
+    )
+    plt.bar(
+        x - group_width / 2,
+        df_filt["uniq_word_cnt"],
+        group_width * inner_width,
+        label="Filtered – Unique",
+    )
+
+    # ---- Unfiltered ----
+    plt.bar(
+        x + group_width / 2,
+        df_unfilt["word_cnt"],
+        group_width,
+        label="Diakon – Total",
+    )
+    plt.bar(
+        x + group_width / 2,
+        df_unfilt["uniq_word_cnt"],
+        group_width * inner_width,
+        label="Diakon – Unique",
+    )
+
+    plt.xticks(x, decades, rotation=45)
+    plt.xlabel("Decade")
+    plt.ylabel("Count")
+    plt.title(f"Word and Unique Word Counts ({year_begin}–{year_end})")
+    plt.legend(ncol=2)
+    plt.grid(axis="y", linestyle="--", alpha=0.6)
+
+    if log_scale:
+        plt.yscale("log")
+
+    plt.tight_layout()
+    outpath = f"./data_outputs/decades_word_comparison_counts_diakon_{year_begin}_{year_end}.png"
+    plt.savefig(outpath, dpi=300)
+    plt.show()
+
+    print(f"Bar plot saved to {outpath}")
+
+
+def plot_decade_unique_stats(
+    year_begin=1850,
+    year_end=1940,
+    log_scale=True,
+    stats_file="./data_outputs/decades_stats_cz.tsv",
+    unfiltered_stats_file="./data_outputs/decades_stats_unfiltered.tsv",
+):
+    # Load TSVs
+    df_filt = pd.read_csv(stats_file, sep="\t")
+    df_unfilt = pd.read_csv(unfiltered_stats_file, sep="\t")
+
+    for df in (df_filt, df_unfilt):
+        df["decade"] = df["decade"].astype(int)
+
+    df_filt = df_filt[
+        (df_filt["decade"] >= year_begin) & (df_filt["decade"] <= year_end)
+    ].sort_values("decade")
+
+    df_unfilt = df_unfilt[
+        (df_unfilt["decade"] >= year_begin) & (df_unfilt["decade"] <= year_end)
+    ].sort_values("decade")
+
+    if df_filt.empty or df_unfilt.empty:
+        print(f"No data available between {year_begin} and {year_end}")
+        return
+
+    decades = df_filt["decade"].astype(str)
+    x = np.arange(len(decades))
+
+    width = 0.35  # filtered vs unfiltered
+
+    plt.figure(figsize=(14, 6))
+
+    plt.bar(
+        x - width / 2,
+        df_filt["uniq_word_cnt"],
+        width,
+        label="Filtered",
+    )
+
+    plt.bar(
+        x + width / 2,
+        df_unfilt["uniq_word_cnt"],
+        width,
+        label="Unfiltered",
+    )
+
+    plt.xticks(x, decades, rotation=45)
+    plt.xlabel("Decade")
+    plt.ylabel("Unique word count")
+    plt.title(f"Unique Word Counts ({year_begin}–{year_end})")
+    plt.legend()
+    plt.grid(axis="y", linestyle="--", alpha=0.6)
+
+    if log_scale:
+        plt.yscale("log")
+
+    plt.tight_layout()
+    outpath = f"./data_outputs/decades_unique_word_comparision_{year_begin}_{year_end}.png"
+    plt.savefig(outpath, dpi=300)
+    plt.show()
+
+    print(f"Bar plot saved to {outpath}")
 
 
 def heaps_law_fit(stats_file = "./data_outputs/decades_stats.tsv"):
